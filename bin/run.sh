@@ -38,9 +38,9 @@ echo "=> Mounting GlusterFS volume ${GLUSTER_VOL} from GlusterFS node ${PEER} ..
 mount -t glusterfs ${PEER}:/${GLUSTER_VOL} ${GLUSTER_VOL_PATH}
 
 if [ ! -e ${HTTP_DOCUMENTROOT}/index.php ]; then
-   echo "=> Installing wordpress in ${HTTP_DOCUMENTROOT} - this may take a while..."
+   echo "=> Installing wordpress in ${HTTP_DOCUMENTROOT} - this may take a while ..."
    curl -o /tmp/wordpress.tar.gz "https://wordpress.org/wordpress-${WORDPRESS_VERSION}.tar.gz"
-   tar -zxvf /tmp/wordpress.tar.gz -C /tmp/
+   tar -zxf /tmp/wordpress.tar.gz -C /tmp/
    mv /tmp/wordpress/* ${HTTP_DOCUMENTROOT}/
    chown -R www-data:www-data ${HTTP_DOCUMENTROOT}
 fi
@@ -82,16 +82,16 @@ if ( count( \$plugins ) === 0 ) {
 ENDL
 fi
 
-if [ grep WORDPRESS_DB_HOSTS /etc/mysql/mysql-proxy.cnf >/dev/null ]; then
-   RUN perl -p -i -e "s/WORDPRESS_DB_HOSTS/${WORDPRESS_DB_HOSTS}/g" /etc/mysql/mysql-proxy.cnf
+if grep WORDPRESS_DB_HOSTS /etc/mysql/mysql-proxy.cnf >/dev/null; then
+   perl -p -i -e "s/WORDPRESS_DB_HOSTS/${WORDPRESS_DB_HOSTS}/g" /etc/mysql/mysql-proxy.cnf
 fi
 
-if [ grep WORDPRESS_DB_USER /etc/mysql/mysql-proxy.cnf >/dev/null ]; then
-   RUN perl -p -i -e "s/WORDPRESS_DB_USER/${WORDPRESS_DB_USER}/g" /etc/mysql/mysql-proxy.cnf
+if grep WORDPRESS_DB_USER /etc/mysql/mysql-proxy.cnf >/dev/null; then
+   perl -p -i -e "s/WORDPRESS_DB_USER/${WORDPRESS_DB_USER}/g" /etc/mysql/mysql-proxy.cnf
 fi
 
-if [ grep WORDPRESS_DB_PASSWORD /etc/mysql/mysql-proxy.cnf >/dev/null ]; then
-   RUN perl -p -i -e "s/WORDPRESS_DB_PASSWORD/${WORDPRESS_DB_PASSWORD}/g" /etc/mysql/mysql-proxy.cnf
+if grep WORDPRESS_DB_PASSWORD /etc/mysql/mysql-proxy.cnf >/dev/null; then
+   perl -p -i -e "s/WORDPRESS_DB_PASSWORD/${WORDPRESS_DB_PASSWORD}/g" /etc/mysql/mysql-proxy.cnf
 fi
 
 /usr/bin/supervisord
