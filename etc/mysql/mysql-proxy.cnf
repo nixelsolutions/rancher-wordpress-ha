@@ -1,0 +1,11 @@
+[mysql-proxy]
+
+proxy-address=127.0.0.1:3306
+daemon=0
+pid-file=/var/run/mysql-proxy.pid
+log-file=/var/log/mysql-proxy.log
+log-level=info
+proxy-backend-addresses=WORDPRESS_DB_HOSTS
+admin-username=WORDPRESS_DB_USER
+admin-password=WORDPRESS_DB_PASSWORD
+admin-lua-script=/usr/lib/mysql-proxy/lua/admin.lua
