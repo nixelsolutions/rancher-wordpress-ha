@@ -1,0 +1,1 @@
+# rancher-wordpress-ha
