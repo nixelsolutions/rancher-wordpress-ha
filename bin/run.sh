@@ -46,6 +46,7 @@ if [ ! -e ${HTTP_DOCUMENTROOT}/index.php ]; then
 fi
 
 if [ ! -e ${HTTP_DOCUMENTROOT}/wp-config.php ]; then
+   echo "=> Configuring wordpress..."
    sed -e "s/database_name_here/$WORDPRESS_DB_NAME/
    s/username_here/$WORDPRESS_DB_USER/
    s/password_here/$WORDPRESS_DB_PASSWORD/
@@ -79,6 +80,18 @@ if ( count( \$plugins ) === 0 ) {
   }
 }
 ENDL
+fi
+
+if [ grep WORDPRESS_DB_HOSTS /etc/mysql/mysql-proxy.cnf >/dev/null ]; then
+   RUN perl -p -i -e "s/WORDPRESS_DB_HOSTS/${WORDPRESS_DB_HOSTS}/g" /etc/mysql/mysql-proxy.cnf
+fi
+
+if [ grep WORDPRESS_DB_USER /etc/mysql/mysql-proxy.cnf >/dev/null ]; then
+   RUN perl -p -i -e "s/WORDPRESS_DB_USER/${WORDPRESS_DB_USER}/g" /etc/mysql/mysql-proxy.cnf
+fi
+
+if [ grep WORDPRESS_DB_PASSWORD /etc/mysql/mysql-proxy.cnf >/dev/null ]; then
+   RUN perl -p -i -e "s/WORDPRESS_DB_PASSWORD/${WORDPRESS_DB_PASSWORD}/g" /etc/mysql/mysql-proxy.cnf
 fi
 
 /usr/bin/supervisord

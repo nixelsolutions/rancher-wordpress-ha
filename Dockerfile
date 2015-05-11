@@ -36,12 +36,10 @@ ADD ./etc/mysql/mysql-proxy.cnf /etc/mysql/mysql-proxy.cnf
 
 RUN perl -p -i -e "s/ENABLED=\"false\"/ENABLED=\"true\"/g" /etc/default/mysql-proxy
 RUN perl -p -i -e "s/OPTIONS=\"\"/OPTIONS=\"--defaults-file=\/etc\/mysql\/mysql-proxy.cnf\"/g" /etc/default/mysql-proxy
-RUN perl -p -i -e "s/WORDPRESS_DB_HOSTS/${WORDPRESS_DB_HOSTS}/g" /etc/mysql/mysql-proxy.cnf
-RUN perl -p -i -e "s/WORDPRESS_DB_USER/${WORDPRESS_DB_USER}/g" /etc/mysql/mysql-proxy.cnf
-RUN perl -p -i -e "s/WORDPRESS_DB_PASSWORD/${WORDPRESS_DB_PASSWORD}/g" /etc/mysql/mysql-proxy.cnf
+RUN chmod 0600 /etc/mysql/mysql-proxy.cnf
 
-#RUN echo "daemon off;" >> /etc/nginx/nginx.conf
-#RUN rm -f /etc/nginx/sites-enabled/default
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+RUN rm -f /etc/nginx/sites-enabled/default
 #RUN HTTP_ESCAPED_DOCROOT=`echo ${HTTP_DOCUMENTROOT} | sed "s/\//\\\\\\\\\//g"` && perl -p -i -e "s/HTTP_DOCUMENTROOT/${HTTP_ESCAPED_DOCROOT}/g" /etc/nginx/sites-enabled/wordpress
 
 CMD ["/usr/local/bin/run.sh"]
