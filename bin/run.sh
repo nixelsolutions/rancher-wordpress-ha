@@ -37,6 +37,10 @@ fi
 echo "=> Mounting GlusterFS volume ${GLUSTER_VOL} from GlusterFS node ${PEER} ..."
 mount -t glusterfs ${PEER}:/${GLUSTER_VOL} ${GLUSTER_VOL_PATH}
 
+if [ ! -d ${HTTP_DOCUMENTROOT} ]; then
+   mkdir -p ${HTTP_DOCUMENTROOT}
+fi
+
 if [ ! -e ${HTTP_DOCUMENTROOT}/index.php ]; then
    echo "=> Installing wordpress in ${HTTP_DOCUMENTROOT} - this may take a while ..."
    curl -o /tmp/wordpress.tar.gz "https://wordpress.org/wordpress-${WORDPRESS_VERSION}.tar.gz"
@@ -45,11 +49,28 @@ if [ ! -e ${HTTP_DOCUMENTROOT}/index.php ]; then
    chown -R www-data:www-data ${HTTP_DOCUMENTROOT}
 fi
 
+if grep "PXC nodes here" /etc/haproxy/haproxy.cfg >/dev/null; then
+   PXC_HOSTS_HAPROXY=""
+   PXC_HOSTS_COUNTER=0
+
+   for host in `echo ${WORDPRESS_DB_HOSTS} | sed "s/,/ /g"`; do
+      PXC_HOSTS_HAPROXY="$PXC_HOSTS_HAPROXY\n  server pxc$PXC_HOSTS_COUNTER $host check port 9200 rise 2 fall 3"
+      if [ $PXC_HOSTS_COUNTER -gt 0 ]; then
+         PXC_HOSTS_HAPROXY="$PXC_HOSTS_HAPROXY backup"
+      fi
+      PXC_HOSTS_COUNTER=$((PXC_HOSTS_COUNTER+1))
+   done
+   perl -p -i -e "s/WORDPRESS_DB_PASSWORD/${WORDPRESS_DB_PASSWORD}/g" /etc/haproxy/haproxy.cfg
+   perl -p -i -e "s/# PXC nodes here.*/${PXC_HOSTS_HAPROXY}/g" /etc/haproxy/haproxy.cfg
+fi
+
 if [ ! -e ${HTTP_DOCUMENTROOT}/wp-config.php ]; then
    echo "=> Configuring wordpress..."
+   DB_PASSWORD=`pwgen 12`
    sed -e "s/database_name_here/$WORDPRESS_DB_NAME/
-   s/username_here/$WORDPRESS_DB_USER/
-   s/password_here/$WORDPRESS_DB_PASSWORD/
+   s/username_here/$WORDPRESS_DB_NAME/
+   s/password_here/$DB_PASSWORD/
+   s/localhost/127.0.0.1/
    /'AUTH_KEY'/s/put your unique phrase here/`pwgen -c -n -1 65`/
    /'SECURE_AUTH_KEY'/s/put your unique phrase here/`pwgen -c -n -1 65`/
    /'LOGGED_IN_KEY'/s/put your unique phrase here/`pwgen -c -n -1 65`/
@@ -80,18 +101,32 @@ if ( count( \$plugins ) === 0 ) {
   }
 }
 ENDL
+
+  echo "=> Creating database ${WORDPRESS_DB_NAME}, username ${WORDPRESS_DB_NAME}, with password ${DB_PASSWORD} ..."
+  service haproxy start
+  sleep 2
+  mysql -h 127.0.0.1 -u root -p${WORDPRESS_DB_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS ${WORDPRESS_DB_NAME}; GRANT ALL PRIVILEGES ON ${WORDPRESS_DB_NAME}.* TO '${WORDPRESS_DB_NAME}'@'10.42.%' IDENTIFIED BY '${DB_PASSWORD}'; FLUSH PRIVILEGES;"
+  service haproxy stop
 fi
 
-if grep WORDPRESS_DB_HOSTS /etc/mysql/mysql-proxy.cnf >/dev/null; then
-   perl -p -i -e "s/WORDPRESS_DB_HOSTS/${WORDPRESS_DB_HOSTS}/g" /etc/mysql/mysql-proxy.cnf
+if [ ! -e ${HTTP_DOCUMENTROOT}/healthcheck.txt ]; then
+   echo "OK" > ${HTTP_DOCUMENTROOT}/healthcheck.txt
 fi
 
-if grep WORDPRESS_DB_USER /etc/mysql/mysql-proxy.cnf >/dev/null; then
-   perl -p -i -e "s/WORDPRESS_DB_USER/${WORDPRESS_DB_USER}/g" /etc/mysql/mysql-proxy.cnf
-fi
-
-if grep WORDPRESS_DB_PASSWORD /etc/mysql/mysql-proxy.cnf >/dev/null; then
-   perl -p -i -e "s/WORDPRESS_DB_PASSWORD/${WORDPRESS_DB_PASSWORD}/g" /etc/mysql/mysql-proxy.cnf
+if grep "PXC nodes here" /etc/haproxy/haproxy.cfg >/dev/null; then
+   PXC_HOSTS_HAPROXY=""
+   PXC_HOSTS_COUNTER=0
+   
+   echo "=> Configuring haproxy ..."
+   for host in `echo ${WORDPRESS_DB_HOSTS} | sed "s/,/ /g"`; do
+      PXC_HOSTS_HAPROXY="$PXC_HOSTS_HAPROXY\n  server pxc$PXC_HOSTS_COUNTER $host check port 9200 rise 2 fall 3" 
+      if [ $PXC_HOSTS_COUNTER -gt 0 ]; then
+         PXC_HOSTS_HAPROXY="$PXC_HOSTS_HAPROXY backup"
+      fi
+      PXC_HOSTS_COUNTER=$((PXC_HOSTS_COUNTER+1))
+   done
+   perl -p -i -e "s/WORDPRESS_DB_PASSWORD/${WORDPRESS_DB_PASSWORD}/g" /etc/haproxy/haproxy.cfg
+   perl -p -i -e "s/# PXC nodes here.*/${PXC_HOSTS_HAPROXY}/g" /etc/haproxy/haproxy.cfg
 fi
 
 /usr/bin/supervisord
