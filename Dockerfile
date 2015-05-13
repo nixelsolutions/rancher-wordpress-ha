@@ -14,7 +14,7 @@ ENV GLUSTER_PEER **ChangeMe**
 
 ENV WORDPRESS_VERSION 4.2.2
 ENV GLUSTER_VOL ranchervol
-ENV GLUSTER_VOL_PATH /var/www/html
+ENV GLUSTER_VOL_PATH /var/www
 ENV HTTP_PORT 80
 ENV HTTP_DOCUMENTROOT ${GLUSTER_VOL_PATH}/wordpress
 ENV DEBUG 0
@@ -47,6 +47,7 @@ RUN sed -i -e "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g" /etc/php5/fpm/php.ini
 RUN sed -i -e "s/upload_max_filesize\s*=\s*2M/upload_max_filesize = 100M/g" /etc/php5/fpm/php.ini
 RUN sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = 100M/g" /etc/php5/fpm/php.ini
 RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php5/fpm/php-fpm.conf
+RUN GLUSTER_ESCAPED_VOL_PATH=`echo ${GLUSTER_VOL_PATH} | sed "s/\//\\\\\\\\\//g"` && perl -p -i -e "s/;?session.save_pat\s*=.*/session.save_path = \"${GLUSTER_ESCAPED_VOL_PATH}\"/g" /etc/php5/fpm/php.ini
 
 # HAProxy
 RUN perl -p -i -e "s/ENABLED=0/ENABLED=1/g" /etc/default/haproxy
