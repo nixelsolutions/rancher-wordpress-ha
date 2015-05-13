@@ -41,8 +41,14 @@ if [ ! -d ${HTTP_DOCUMENTROOT} ]; then
    mkdir -p ${HTTP_DOCUMENTROOT}
 fi
 
+if [ ! -d ${PHP_SESSION_PATH} ]; then
+   mkdir -p ${PHP_SESSION_PATH}
+   chown www-data:www-data ${PHP_SESSION_PATH}
+fi
+
 if [ ! -e ${HTTP_DOCUMENTROOT}/index.php ]; then
    echo "=> Installing wordpress in ${HTTP_DOCUMENTROOT} - this may take a while ..."
+   touch ${HTTP_DOCUMENTROOT}/index.php
    curl -o /tmp/wordpress.tar.gz "https://wordpress.org/wordpress-${WORDPRESS_VERSION}.tar.gz"
    tar -zxf /tmp/wordpress.tar.gz -C /tmp/
    mv /tmp/wordpress/* ${HTTP_DOCUMENTROOT}/
@@ -64,9 +70,10 @@ if grep "PXC nodes here" /etc/haproxy/haproxy.cfg >/dev/null; then
    perl -p -i -e "s/# PXC nodes here.*/${PXC_HOSTS_HAPROXY}/g" /etc/haproxy/haproxy.cfg
 fi
 
-if [ ! -e ${HTTP_DOCUMENTROOT}/wp-config.php ]; then
+if [ ! -e ${HTTP_DOCUMENTROOT}/wp-config.php ] && [ -e ${HTTP_DOCUMENTROOT}/wp-config-sample.php ] ; then
    echo "=> Configuring wordpress..."
-   DB_PASSWORD=`pwgen 12`
+   touch ${HTTP_DOCUMENTROOT}/wp-config.php
+   DB_PASSWORD=`pwgen -s 20 1`
    sed -e "s/database_name_here/$WORDPRESS_DB_NAME/
    s/username_here/$WORDPRESS_DB_NAME/
    s/password_here/$DB_PASSWORD/
@@ -111,22 +118,6 @@ fi
 
 if [ ! -e ${HTTP_DOCUMENTROOT}/healthcheck.txt ]; then
    echo "OK" > ${HTTP_DOCUMENTROOT}/healthcheck.txt
-fi
-
-if grep "PXC nodes here" /etc/haproxy/haproxy.cfg >/dev/null; then
-   PXC_HOSTS_HAPROXY=""
-   PXC_HOSTS_COUNTER=0
-   
-   echo "=> Configuring haproxy ..."
-   for host in `echo ${WORDPRESS_DB_HOSTS} | sed "s/,/ /g"`; do
-      PXC_HOSTS_HAPROXY="$PXC_HOSTS_HAPROXY\n  server pxc$PXC_HOSTS_COUNTER $host check port 9200 rise 2 fall 3" 
-      if [ $PXC_HOSTS_COUNTER -gt 0 ]; then
-         PXC_HOSTS_HAPROXY="$PXC_HOSTS_HAPROXY backup"
-      fi
-      PXC_HOSTS_COUNTER=$((PXC_HOSTS_COUNTER+1))
-   done
-   perl -p -i -e "s/WORDPRESS_DB_PASSWORD/${WORDPRESS_DB_PASSWORD}/g" /etc/haproxy/haproxy.cfg
-   perl -p -i -e "s/# PXC nodes here.*/${PXC_HOSTS_HAPROXY}/g" /etc/haproxy/haproxy.cfg
 fi
 
 /usr/bin/supervisord
