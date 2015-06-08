@@ -10,20 +10,20 @@ RUN add-apt-repository -y ppa:gluster/glusterfs-3.5 && \
     apt-get update && \
     apt-get install -y nginx php5-fpm php5-mysql php-apc supervisor glusterfs-client curl haproxy pwgen unzip mysql-client
 
-ENV GLUSTER_PEER **ChangeMe**
-
 ENV WORDPRESS_VERSION 4.2.2
+ENV WORDPRESS_NAME wordpress
 ENV GLUSTER_VOL ranchervol
 ENV GLUSTER_VOL_PATH /var/www
 ENV HTTP_PORT 80
-ENV HTTP_DOCUMENTROOT ${GLUSTER_VOL_PATH}/wordpress
+ENV HTTP_DOCUMENTROOT ${GLUSTER_VOL_PATH}/${WORDPRESS_NAME}
 ENV PHP_SESSION_PATH ${GLUSTER_VOL_PATH}/phpsessions
 ENV DEBUG 0
 
-ENV WORDPRESS_DB_HOSTS **ChangeMe**
-ENV WORDPRESS_DB_USER root
-ENV WORDPRESS_DB_PASSWORD **ChangeMe**
-ENV WORDPRESS_DB_NAME wordpress
+ENV DB_USER root
+ENV DB_PASSWORD **ChangeMe**
+ENV DB_NAME ${WORDPRESS_NAME}
+ENV DB_HOST db
+ENV GLUSTER_HOST storage
 
 RUN mkdir -p /var/log/supervisor ${GLUSTER_VOL_PATH}
 WORKDIR ${GLUSTER_VOL_PATH}

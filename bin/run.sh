@@ -4,38 +4,49 @@ set -e
 
 [ "$DEBUG" == "1" ] && set -x && set +e
 
-if [ "${GLUSTER_PEER}" == "**ChangeMe**" ]; then
-   echo "ERROR: You did not specify "GLUSTER_PEER" environment variable - Exiting..."
-   exit 0
+# Required variables
+sleep 5
+export GLUSTER_HOSTS=`dig +short ${GLUSTER_HOST}`
+if [ -z "${GLUSTER_HOSTS}" ]; then
+   echo "*** ERROR: Could not determine which containers are part of Gluster service."
+   echo "*** Is Gluster service linked with the alias \"${GLUSTER_HOST}\"?"
+   echo "*** If not, please link gluster service as \"${GLUSTER_HOST}\""
+   echo "*** Exiting ..."
+   exit 1
 fi
-if [ "${WORDPRESS_DB_HOSTS}" == "**ChangeMe**" ]; then
-   echo "ERROR: You did not specify "WORDPRESS_DB_HOSTS" environment variable - Exiting..."
-   exit 0
+export DB_HOSTS=`dig +short ${DB_HOST}`
+if [ -z "${DB_HOSTS}" ]; then
+   echo "*** ERROR: Could not determine which containers are part of Gluster service."
+   echo "*** Is Gluster service linked with the alias \"${DB_HOST}\"?"
+   echo "*** If not, please link gluster service as \"${DB_HOST}\""
+   echo "*** Exiting ..."
+   exit 1
 fi
-if [ "${WORDPRESS_DB_PASSWORD}" == "**ChangeMe**" ]; then
-   echo "ERROR: You did not specify "WORDPRESS_DB_PASSWORD" environment variable - Exiting..."
+
+if [ "${DB_PASSWORD}" == "**ChangeMe**" -o -z "${DB_PASSWORD}" ]; then
+   echo "ERROR: You did not specify "DB_PASSWORD" environment variable - Exiting..."
    exit 0
 fi
 
 ALIVE=0
-for PEER in `echo "${GLUSTER_PEER}" | sed "s/,/ /g"`; do
-    echo "=> Checking if I can reach GlusterFS node ${PEER} ..."
-    if ping -c 10 ${PEER} >/dev/null 2>&1; then
-       echo "=> GlusterFS node ${PEER} is alive"
+for glusterHost in ${GLUSTER_HOSTS}; do
+    echo "=> Checking if I can reach GlusterFS node ${glusterHost} ..."
+    if ping -c 10 ${glusterHost} >/dev/null 2>&1; then
+       echo "=> GlusterFS node ${glusterHost} is alive"
        ALIVE=1
        break
     else
-       echo "*** Could not reach server ${PEER} ..."
+       echo "*** Could not reach server ${glusterHost} ..."
     fi
 done
 
 if [ "$ALIVE" == 0 ]; then
-   echo "ERROR: could not contact any GlusterFS node from this list: ${GLUSTER_PEER} - Exiting..."
+   echo "ERROR: could not contact any GlusterFS node from this list: ${GLUSTER_HOSTS} - Exiting..."
    exit 1
 fi
 
-echo "=> Mounting GlusterFS volume ${GLUSTER_VOL} from GlusterFS node ${PEER} ..."
-mount -t glusterfs ${PEER}:/${GLUSTER_VOL} ${GLUSTER_VOL_PATH}
+echo "=> Mounting GlusterFS volume ${GLUSTER_VOL} from GlusterFS node ${glusterHost} ..."
+mount -t glusterfs ${glusterHost}:/${GLUSTER_VOL} ${GLUSTER_VOL_PATH}
 
 if [ ! -d ${HTTP_DOCUMENTROOT} ]; then
    mkdir -p ${HTTP_DOCUMENTROOT}
@@ -59,14 +70,14 @@ if grep "PXC nodes here" /etc/haproxy/haproxy.cfg >/dev/null; then
    PXC_HOSTS_HAPROXY=""
    PXC_HOSTS_COUNTER=0
 
-   for host in `echo ${WORDPRESS_DB_HOSTS} | sed "s/,/ /g"`; do
+   for host in `echo ${DB_HOSTS} | sed "s/,/ /g"`; do
       PXC_HOSTS_HAPROXY="$PXC_HOSTS_HAPROXY\n  server pxc$PXC_HOSTS_COUNTER $host check port 9200 rise 2 fall 3"
       if [ $PXC_HOSTS_COUNTER -gt 0 ]; then
          PXC_HOSTS_HAPROXY="$PXC_HOSTS_HAPROXY backup"
       fi
       PXC_HOSTS_COUNTER=$((PXC_HOSTS_COUNTER+1))
    done
-   perl -p -i -e "s/WORDPRESS_DB_PASSWORD/${WORDPRESS_DB_PASSWORD}/g" /etc/haproxy/haproxy.cfg
+   perl -p -i -e "s/DB_PASSWORD/${DB_PASSWORD}/g" /etc/haproxy/haproxy.cfg
    perl -p -i -e "s/# PXC nodes here.*/${PXC_HOSTS_HAPROXY}/g" /etc/haproxy/haproxy.cfg
 fi
 
@@ -74,8 +85,8 @@ if [ ! -e ${HTTP_DOCUMENTROOT}/wp-config.php ] && [ -e ${HTTP_DOCUMENTROOT}/wp-c
    echo "=> Configuring wordpress..."
    touch ${HTTP_DOCUMENTROOT}/wp-config.php
    DB_PASSWORD=`pwgen -s 20 1`
-   sed -e "s/database_name_here/$WORDPRESS_DB_NAME/
-   s/username_here/$WORDPRESS_DB_NAME/
+   sed -e "s/database_name_here/$DB_NAME/
+   s/username_here/$DB_NAME/
    s/password_here/$DB_PASSWORD/
    s/localhost/127.0.0.1/
    /'AUTH_KEY'/s/put your unique phrase here/`pwgen -c -n -1 65`/
@@ -109,10 +120,10 @@ if ( count( \$plugins ) === 0 ) {
 }
 ENDL
 
-  echo "=> Creating database ${WORDPRESS_DB_NAME}, username ${WORDPRESS_DB_NAME}, with password ${DB_PASSWORD} ..."
+  echo "=> Creating database ${DB_NAME}, username ${DB_NAME}, with password ${DB_PASSWORD} ..."
   service haproxy start
   sleep 2
-  mysql -h 127.0.0.1 -u root -p${WORDPRESS_DB_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS ${WORDPRESS_DB_NAME}; GRANT ALL PRIVILEGES ON ${WORDPRESS_DB_NAME}.* TO '${WORDPRESS_DB_NAME}'@'10.42.%' IDENTIFIED BY '${DB_PASSWORD}'; FLUSH PRIVILEGES;"
+  mysql -h 127.0.0.1 -u root -p${DB_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME}; GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_NAME}'@'10.42.%' IDENTIFIED BY '${DB_PASSWORD}'; FLUSH PRIVILEGES;"
   service haproxy stop
 fi
 
