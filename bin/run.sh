@@ -78,7 +78,8 @@ if grep "PXC nodes here" /etc/haproxy/haproxy.cfg >/dev/null; then
       PXC_HOSTS_COUNTER=$((PXC_HOSTS_COUNTER+1))
    done
    perl -p -i -e "s/DB_PASSWORD/${DB_PASSWORD}/g" /etc/haproxy/haproxy.cfg
-   perl -p -i -e "s/# PXC nodes here.*/${PXC_HOSTS_HAPROXY}/g" /etc/haproxy/haproxy.cfg
+   perl -p -i -e "s/.*server pxc.*//g" /etc/haproxy/haproxy.cfg
+   perl -p -i -e "s/# PXC nodes here.*/# PXC nodes here\n${PXC_HOSTS_HAPROXY}/g" /etc/haproxy/haproxy.cfg
 fi
 
 if [ ! -e ${HTTP_DOCUMENTROOT}/wp-config.php ] && [ -e ${HTTP_DOCUMENTROOT}/wp-config-sample.php ] ; then
