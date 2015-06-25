@@ -29,13 +29,12 @@ if [ "${DB_PASSWORD}" == "**ChangeMe**" -o -z "${DB_PASSWORD}" ]; then
 fi
 
 if [ "${DB_NAME}" == "**ChangeMe**" -o -z "${DB_NAME}" ]; then
-   DB_NAME="${WORDPRESS_NAME}"
+   DB_NAME=`echo "${WORDPRESS_NAME}" | sed "s/\./-/g"`
 fi
 
 if [ "${HTTP_DOCUMENTROOT}" == "**ChangeMe**" -o -z "${HTTP_DOCUMENTROOT}" ]; then
    HTTP_DOCUMENTROOT=${GLUSTER_VOL_PATH}/${WORDPRESS_NAME}
 fi
-
 
 ALIVE=0
 for glusterHost in ${GLUSTER_HOSTS}; do
