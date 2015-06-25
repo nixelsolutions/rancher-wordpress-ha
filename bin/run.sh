@@ -28,6 +28,10 @@ if [ "${DB_PASSWORD}" == "**ChangeMe**" -o -z "${DB_PASSWORD}" ]; then
    exit 0
 fi
 
+if [ "${DB_NAME}" == "**ChangeMe**" -o -z "${DB_PASSWORD}" ]; then
+   DB_NAME="${WORDPRESS_NAME}"
+fi
+
 ALIVE=0
 for glusterHost in ${GLUSTER_HOSTS}; do
     echo "=> Checking if I can reach GlusterFS node ${glusterHost} ..."
