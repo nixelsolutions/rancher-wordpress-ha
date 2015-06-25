@@ -29,7 +29,7 @@ if [ "${DB_PASSWORD}" == "**ChangeMe**" -o -z "${DB_PASSWORD}" ]; then
 fi
 
 if [ "${DB_NAME}" == "**ChangeMe**" -o -z "${DB_NAME}" ]; then
-   DB_NAME=`echo "${WORDPRESS_NAME}" | sed "s/\./-/g"`
+   DB_NAME=`echo "${WORDPRESS_NAME}" | sed "s/\./_/g"`
 fi
 
 if [ "${HTTP_DOCUMENTROOT}" == "**ChangeMe**" -o -z "${HTTP_DOCUMENTROOT}" ]; then
