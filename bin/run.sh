@@ -16,8 +16,8 @@ if [ -z "${GLUSTER_HOSTS}" ]; then
 fi
 export DB_HOSTS=`dig +short ${DB_HOST}`
 if [ -z "${DB_HOSTS}" ]; then
-   echo "*** ERROR: Could not determine which containers are part of Gluster service."
-   echo "*** Is Gluster service linked with the alias \"${DB_HOST}\"?"
+   echo "*** ERROR: Could not determine which containers are part of PXC service."
+   echo "*** Is PXC service linked with the alias \"${DB_HOST}\"?"
    echo "*** If not, please link gluster service as \"${DB_HOST}\""
    echo "*** Exiting ..."
    exit 1
