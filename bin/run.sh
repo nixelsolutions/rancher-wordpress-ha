@@ -24,8 +24,11 @@ if [ -z "${DB_HOSTS}" ]; then
 fi
 
 if [ "${DB_PASSWORD}" == "**ChangeMe**" -o -z "${DB_PASSWORD}" ]; then
-   echo "ERROR: You did not specify "DB_PASSWORD" environment variable - Exiting..."
-   exit 0
+   DB_PASSWORD=${DB_ENV_PXC_ROOT_PASSWORD}
+   if [ "${DB_PASSWORD}" == "**ChangeMe**" -o -z "${DB_PASSWORD}" ]; then
+      echo "ERROR: Could not retreive PXC_ROOT_PASSWORD from PXC service - DB_ENV_PXC_ROOT_PASSWORD env var is empty - Exiting..."
+      exit 0
+   fi
 fi
 
 if [ "${DB_NAME}" == "**ChangeMe**" -o -z "${DB_NAME}" ]; then
