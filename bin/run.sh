@@ -31,8 +31,8 @@ if [ "${DB_PASSWORD}" == "**ChangeMe**" -o -z "${DB_PASSWORD}" ]; then
    fi
 fi
 
-if [ "${DB_NAME}" == "**ChangeMe**" -o -z "${DB_NAME}" ]; then
-   DB_NAME=`echo "${WORDPRESS_NAME}" | sed "s/\./_/g"`
+if [ "${WP_DB_NAME}" == "**ChangeMe**" -o -z "${WP_DB_NAME}" ]; then
+   WP_DB_NAME=`echo "${WORDPRESS_NAME}" | sed "s/\./_/g"`
 fi
 
 if [ "${HTTP_DOCUMENTROOT}" == "**ChangeMe**" -o -z "${HTTP_DOCUMENTROOT}" ]; then
@@ -107,8 +107,8 @@ if [ ! -e ${HTTP_DOCUMENTROOT}/wp-config.php ] && [ -e ${HTTP_DOCUMENTROOT}/wp-c
    echo "=> Configuring wordpress..."
    touch ${HTTP_DOCUMENTROOT}/wp-config.php
    WP_DB_PASSWORD=`pwgen -s 20 1`
-   sed -e "s/database_name_here/$DB_NAME/
-   s/username_here/$DB_NAME/
+   sed -e "s/database_name_here/$WP_DB_NAME/
+   s/username_here/$WP_DB_NAME/
    s/password_here/$WP_DB_PASSWORD/
    s/localhost/127.0.0.1/
    /'AUTH_KEY'/s/put your unique phrase here/`pwgen -c -n -1 65`/
@@ -142,10 +142,10 @@ if ( count( \$plugins ) === 0 ) {
 }
 ENDL
 
-  echo "=> Creating database ${DB_NAME}, username ${DB_NAME}, with password ${WP_DB_PASSWORD} ..."
+  echo "=> Creating database ${WP_DB_NAME}, username ${WP_DB_NAME}, with password ${WP_DB_PASSWORD} ..."
   service haproxy start
   sleep 2
-  mysql -h 127.0.0.1 -u root -p${DB_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME}; GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_NAME}'@'10.42.%' IDENTIFIED BY '${WP_DB_PASSWORD}'; FLUSH PRIVILEGES;"
+  mysql -h 127.0.0.1 -u root -p${DB_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS ${WP_DB_NAME}; GRANT ALL PRIVILEGES ON ${WP_DB_NAME}.* TO '${WP_DB_NAME}'@'10.42.%' IDENTIFIED BY '${WP_DB_PASSWORD}'; FLUSH PRIVILEGES;"
   service haproxy stop
 fi
 
